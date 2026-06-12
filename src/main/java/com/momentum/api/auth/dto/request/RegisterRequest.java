@@ -1,4 +1,4 @@
-package com.momentum.api.auth.dto;
+package com.momentum.api.auth.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class RegisterRequestDto {
+public class RegisterRequest {
 
     @Email
     @NotBlank

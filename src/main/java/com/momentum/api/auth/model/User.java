@@ -1,5 +1,6 @@
 package com.momentum.api.auth.model;
 
+import com.momentum.api.auth.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,9 @@ public class User {
     @Column(nullable = false)
     private boolean accountNonLocked;
 
+    @Column(nullable = false)
+    private UserRole role;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -49,6 +53,7 @@ public class User {
         updatedAt = Instant.now();
         enabled = true;
         accountNonLocked = true;
+        role = UserRole.ROLE_USER;
     }
 
     @PreUpdate

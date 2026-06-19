@@ -4,3 +4,7 @@ spring:
 
     profiles:
         active: dev
+
+jwt:
+    secret: M2Y0YjU2YzgxYTA5M2RlZjU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNA==
+    expiration: 86400000

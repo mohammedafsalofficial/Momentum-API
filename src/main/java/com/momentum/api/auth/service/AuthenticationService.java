@@ -1,10 +1,13 @@
 package com.momentum.api.auth.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.momentum.api.auth.dto.request.GoogleSignInRequest;
 import com.momentum.api.auth.dto.request.LoginRequest;
 import com.momentum.api.auth.dto.request.RegisterRequest;
 import com.momentum.api.auth.dto.response.UserResponse;
-import com.momentum.api.auth.enums.UserRole;
+import com.momentum.api.auth.enums.IdentityProvider;
 import com.momentum.api.auth.exception.EmailAlreadyExistsException;
+import com.momentum.api.auth.exception.GoogleSignInFailureException;
 import com.momentum.api.auth.exception.LoginFailureException;
 import com.momentum.api.auth.model.User;
 import com.momentum.api.auth.repository.UserRepository;
@@ -26,6 +29,8 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final GoogleTokenVerifierService googleTokenVerifierService;
+    private final CustomUserDetailsService customUserDetailsService;
 
     public UserResponse register(RegisterRequest requestPayload) {
         if (userRepository.existsByEmail(requestPayload.getEmail())) {
@@ -56,6 +61,31 @@ public class AuthenticationService {
         } catch (AuthenticationException e) {
             throw new LoginFailureException();
         }
+    }
+
+    public String googleSignIn(GoogleSignInRequest requestPayload) {
+        GoogleIdToken.Payload payload = googleTokenVerifierService.verify(requestPayload.getIdToken());
+
+        String email = payload.getEmail();
+        String firstName = (String) payload.get("given_name");
+        String lastName = (String) payload.get("family_name");
+        String picture = (String) payload.get("picture");
+
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .email(email)
+                            .password(null)
+                            .firstName(firstName != null ? firstName : email)
+                            .lastName(lastName)
+                            .pictureUrl(picture)
+                            .idp(IdentityProvider.GOOGLE)
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
+        return jwtUtil.generateToken(userDetails);
     }
 
     private UserResponse toUserResponse(User user) {

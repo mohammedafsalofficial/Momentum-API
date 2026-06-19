@@ -1,5 +1,6 @@
 package com.momentum.api.auth.model;
 
+import com.momentum.api.auth.enums.IdentityProvider;
 import com.momentum.api.auth.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,13 +25,19 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     @Column(nullable = false)
     private String firstName;
 
     private String lastName;
+
+    private String pictureUrl;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private IdentityProvider idp;
 
     @Column(nullable = false)
     private boolean enabled;
@@ -39,6 +46,7 @@ public class User {
     private boolean accountNonLocked;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private UserRole role;
 
     @Column(nullable = false, updatable = false)
@@ -54,6 +62,7 @@ public class User {
         enabled = true;
         accountNonLocked = true;
         role = UserRole.ROLE_USER;
+        if (idp == null) idp = IdentityProvider.LOCAL;
     }
 
     @PreUpdate

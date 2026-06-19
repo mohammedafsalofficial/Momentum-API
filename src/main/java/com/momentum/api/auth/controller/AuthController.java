@@ -1,5 +1,6 @@
 package com.momentum.api.auth.controller;
 
+import com.momentum.api.auth.dto.request.GoogleSignInRequest;
 import com.momentum.api.auth.dto.request.LoginRequest;
 import com.momentum.api.auth.dto.request.RegisterRequest;
 import com.momentum.api.auth.dto.response.LoginResponse;
@@ -40,6 +41,33 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<SuccessResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest requestPayload) {
         String accessToken = authenticationService.login(requestPayload);
+
+        ResponseCookie cookie = ResponseCookie.from("access_token", accessToken)
+                .httpOnly(true)
+                .secure(false)  // true in prod
+                .path("/")
+                .maxAge(Duration.ofHours(1))
+                .sameSite("Strict")
+                .build();
+
+        LoginResponse responseDto = LoginResponse.builder()
+                .accessToken(accessToken)
+                .build();
+
+        SuccessResponse<LoginResponse> responsePayload = SuccessResponse.<LoginResponse>builder()
+                .success(true)
+                .message("User logged in successfully")
+                .data(responseDto)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(responsePayload);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<SuccessResponse<LoginResponse>> googleSignIn(@RequestBody @Valid GoogleSignInRequest requestPayload) {
+        String accessToken = authenticationService.googleSignIn(requestPayload);
 
         ResponseCookie cookie = ResponseCookie.from("access_token", accessToken)
                 .httpOnly(true)

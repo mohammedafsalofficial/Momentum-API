@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -33,9 +34,21 @@ public class RefreshToken {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    // Groups all tokens in one rotation chain — same value across the whole chain
+    @Column(nullable = false, updatable = false)
+    private String familyId;
+
+    // True once this token has been used to rotate into a new one
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean revoked = false;
+
     @PrePersist
     void prePersist() {
         createdAt = Instant.now();
+        if (familyId == null) {
+            familyId = UUID.randomUUID().toString();
+        }
     }
 
     public boolean isExpired() {

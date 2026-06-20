@@ -87,7 +87,7 @@ public class AuthenticationService {
     }
 
     public TokenPair refresh(String rawRefreshToken) {
-        RefreshToken validated = refreshTokenService.validate(rawRefreshToken);
+        RefreshToken validated = refreshTokenService.validateAndDetectReuse(rawRefreshToken);
         RefreshToken rotated = refreshTokenService.rotate(validated);
         return generateTokenPair(rotated.getUser());
     }

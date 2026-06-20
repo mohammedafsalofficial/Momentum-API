@@ -88,4 +88,17 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
                 .body(responsePayload);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<SuccessResponse<Void>> logout(@CookieValue(name = "refresh_token") String refreshToken) {
+        authenticationService.logout(refreshToken);
+        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+                .success(true)
+                .message("Logged out successfully.")
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieService.clearAccessTokenCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, cookieService.clearRefreshTokenCookie().toString())
+                .body(responsePayload);
+    }
 }

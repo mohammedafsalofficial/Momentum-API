@@ -105,6 +105,10 @@ public class AuthenticationService {
                 .build();
     }
 
+    public void logout(String refreshToken) {
+        refreshTokenService.deleteByToken(refreshToken);
+    }
+
     /**
      * Simple record to carry both tokens
      */

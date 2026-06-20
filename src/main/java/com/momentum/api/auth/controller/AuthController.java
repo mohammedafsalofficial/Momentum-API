@@ -4,21 +4,17 @@ import com.momentum.api.auth.dto.request.GoogleSignInRequest;
 import com.momentum.api.auth.dto.request.LoginRequest;
 import com.momentum.api.auth.dto.request.RegisterRequest;
 import com.momentum.api.auth.dto.response.LoginResponse;
+import com.momentum.api.auth.dto.response.RefreshResponse;
 import com.momentum.api.auth.dto.response.UserResponse;
 import com.momentum.api.auth.service.AuthenticationService;
 import com.momentum.api.common.response.SuccessResponse;
+import com.momentum.api.common.service.CookieService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.time.Duration;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,6 +22,7 @@ import java.time.Duration;
 public class AuthController {
 
     private final AuthenticationService authenticationService;
+    private final CookieService cookieService;
 
     @PostMapping("/register")
     public ResponseEntity<SuccessResponse<UserResponse>> register(@RequestBody @Valid RegisterRequest requestPayload) {
@@ -40,55 +37,55 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<SuccessResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest requestPayload) {
-        String accessToken = authenticationService.login(requestPayload);
-
-        ResponseCookie cookie = ResponseCookie.from("access_token", accessToken)
-                .httpOnly(true)
-                .secure(false)  // true in prod
-                .path("/")
-                .maxAge(Duration.ofHours(1))
-                .sameSite("Strict")
-                .build();
-
+        AuthenticationService.TokenPair tokens = authenticationService.login(requestPayload);
         LoginResponse responseDto = LoginResponse.builder()
-                .accessToken(accessToken)
+                .accessToken(tokens.accessToken())
+                .refreshToken(tokens.refreshToken())
                 .build();
-
         SuccessResponse<LoginResponse> responsePayload = SuccessResponse.<LoginResponse>builder()
                 .success(true)
                 .message("User logged in successfully")
                 .data(responseDto)
                 .build();
-
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
                 .body(responsePayload);
     }
 
     @PostMapping("/google")
     public ResponseEntity<SuccessResponse<LoginResponse>> googleSignIn(@RequestBody @Valid GoogleSignInRequest requestPayload) {
-        String accessToken = authenticationService.googleSignIn(requestPayload);
-
-        ResponseCookie cookie = ResponseCookie.from("access_token", accessToken)
-                .httpOnly(true)
-                .secure(false)  // true in prod
-                .path("/")
-                .maxAge(Duration.ofHours(1))
-                .sameSite("Strict")
-                .build();
-
+        AuthenticationService.TokenPair tokens = authenticationService.googleSignIn(requestPayload);
         LoginResponse responseDto = LoginResponse.builder()
-                .accessToken(accessToken)
+                .accessToken(tokens.accessToken())
+                .refreshToken(tokens.refreshToken())
                 .build();
-
         SuccessResponse<LoginResponse> responsePayload = SuccessResponse.<LoginResponse>builder()
                 .success(true)
                 .message("User logged in successfully")
                 .data(responseDto)
                 .build();
-
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
+                .body(responsePayload);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<SuccessResponse<RefreshResponse>> refresh(@CookieValue(name = "refresh_token") String refreshToken) {
+        AuthenticationService.TokenPair tokens = authenticationService.refresh(refreshToken);
+        RefreshResponse responseDto = RefreshResponse.builder()
+                .accessToken(tokens.accessToken())
+                .refreshToken(tokens.refreshToken())
+                .build();
+        SuccessResponse<RefreshResponse> responsePayload = SuccessResponse.<RefreshResponse>builder()
+                .success(true)
+                .message("Token refreshed successfully.")
+                .data(responseDto)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
                 .body(responsePayload);
     }
 }

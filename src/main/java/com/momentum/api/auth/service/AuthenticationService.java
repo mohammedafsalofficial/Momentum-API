@@ -7,8 +7,8 @@ import com.momentum.api.auth.dto.request.RegisterRequest;
 import com.momentum.api.auth.dto.response.UserResponse;
 import com.momentum.api.auth.enums.IdentityProvider;
 import com.momentum.api.auth.exception.EmailAlreadyExistsException;
-import com.momentum.api.auth.exception.GoogleSignInFailureException;
 import com.momentum.api.auth.exception.LoginFailureException;
+import com.momentum.api.auth.model.RefreshToken;
 import com.momentum.api.auth.model.User;
 import com.momentum.api.auth.repository.UserRepository;
 import com.momentum.api.auth.util.JwtUtil;
@@ -31,6 +31,7 @@ public class AuthenticationService {
     private final JwtUtil jwtUtil;
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final CustomUserDetailsService customUserDetailsService;
+    private final RefreshTokenService refreshTokenService;
 
     public UserResponse register(RegisterRequest requestPayload) {
         if (userRepository.existsByEmail(requestPayload.getEmail())) {
@@ -49,21 +50,19 @@ public class AuthenticationService {
         return toUserResponse(savedUser);
     }
 
-    public String login(LoginRequest requestPayload) {
+    public TokenPair login(LoginRequest requestPayload) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(requestPayload.getEmail(), requestPayload.getPassword())
             );
-
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-            return jwtUtil.generateToken(userDetails);
+            CustomUserDetails userDetailsService = (CustomUserDetails) authentication.getPrincipal();
+            return generateTokenPair(userDetailsService.getUser());
         } catch (AuthenticationException e) {
             throw new LoginFailureException();
         }
     }
 
-    public String googleSignIn(GoogleSignInRequest requestPayload) {
+    public TokenPair googleSignIn(GoogleSignInRequest requestPayload) {
         GoogleIdToken.Payload payload = googleTokenVerifierService.verify(requestPayload.getIdToken());
 
         String email = payload.getEmail();
@@ -84,8 +83,13 @@ public class AuthenticationService {
                     return userRepository.save(newUser);
                 });
 
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
-        return jwtUtil.generateToken(userDetails);
+        return generateTokenPair(user);
+    }
+
+    public TokenPair refresh(String rawRefreshToken) {
+        RefreshToken validated = refreshTokenService.validate(rawRefreshToken);
+        RefreshToken rotated = refreshTokenService.rotate(validated);
+        return generateTokenPair(rotated.getUser());
     }
 
     private UserResponse toUserResponse(User user) {
@@ -99,5 +103,17 @@ public class AuthenticationService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Simple record to carry both tokens
+     */
+    public record TokenPair(String accessToken, String refreshToken) {}
+
+    private TokenPair generateTokenPair(User user) {
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
+        String accessToken = jwtUtil.generateToken(userDetails);
+        RefreshToken refreshToken = refreshTokenService.create(user);
+        return new TokenPair(accessToken, refreshToken.getToken());
     }
 }

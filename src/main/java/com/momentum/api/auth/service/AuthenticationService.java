@@ -89,7 +89,8 @@ public class AuthenticationService {
     public TokenPair refresh(String rawRefreshToken) {
         RefreshToken validated = refreshTokenService.validateAndDetectReuse(rawRefreshToken);
         RefreshToken rotated = refreshTokenService.rotate(validated);
-        return generateTokenPair(rotated.getUser());
+        String accessToken = generateAccessToken(rotated.getUser());
+        return new TokenPair(accessToken, rotated.getToken());
     }
 
     private UserResponse toUserResponse(User user) {
@@ -114,9 +115,13 @@ public class AuthenticationService {
      */
     public record TokenPair(String accessToken, String refreshToken) {}
 
-    private TokenPair generateTokenPair(User user) {
+    private String generateAccessToken(User user) {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
-        String accessToken = jwtUtil.generateToken(userDetails);
+        return jwtUtil.generateToken(userDetails);
+    }
+
+    private TokenPair generateTokenPair(User user) {
+        String accessToken = generateAccessToken(user);
         RefreshToken refreshToken = refreshTokenService.create(user);
         return new TokenPair(accessToken, refreshToken.getToken());
     }

@@ -55,7 +55,7 @@ public class RefreshTokenService {
      * revoked (i.e. it was already rotated once before) - this is the
      * signal that the token may have been stolen.
      */
-    @Transactional
+    @Transactional(dontRollbackOn = RefreshTokenReuseDetectedException.class)
     public RefreshToken validateAndDetectReuse(String rawRefreshToken) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(rawRefreshToken)
                 .orElseThrow(InvalidRefreshTokenException::new);

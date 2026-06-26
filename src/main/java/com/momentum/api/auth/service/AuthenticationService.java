@@ -7,6 +7,7 @@ import com.momentum.api.auth.dto.request.RegisterRequest;
 import com.momentum.api.auth.dto.response.UserResponse;
 import com.momentum.api.auth.enums.IdentityProvider;
 import com.momentum.api.auth.exception.EmailAlreadyExistsException;
+import com.momentum.api.auth.exception.EmailNotVerifiedException;
 import com.momentum.api.auth.exception.LoginFailureException;
 import com.momentum.api.auth.model.RefreshToken;
 import com.momentum.api.auth.model.User;
@@ -32,6 +33,7 @@ public class AuthenticationService {
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final CustomUserDetailsService customUserDetailsService;
     private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
 
     public UserResponse register(RegisterRequest requestPayload) {
         if (userRepository.existsByEmail(requestPayload.getEmail())) {
@@ -43,9 +45,13 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(requestPayload.getPassword()))
                 .firstName(requestPayload.getFirstName())
                 .lastName(requestPayload.getLastName())
+                .idp(IdentityProvider.LOCAL)
+                .emailVerified(false)
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        emailVerificationService.createAndSendVerificationToken(savedUser);
 
         return toUserResponse(savedUser);
     }
@@ -56,6 +62,12 @@ public class AuthenticationService {
                     new UsernamePasswordAuthenticationToken(requestPayload.getEmail(), requestPayload.getPassword())
             );
             CustomUserDetails userDetailsService = (CustomUserDetails) authentication.getPrincipal();
+            User user = userDetailsService.getUser();
+
+            if (user.getIdp() == IdentityProvider.LOCAL && !user.isEmailVerified()) {
+                throw new EmailNotVerifiedException();
+            }
+
             return generateTokenPair(userDetailsService.getUser());
         } catch (AuthenticationException e) {
             throw new LoginFailureException();
@@ -79,6 +91,7 @@ public class AuthenticationService {
                             .lastName(lastName)
                             .pictureUrl(picture)
                             .idp(IdentityProvider.GOOGLE)
+                            .emailVerified(true)
                             .build();
                     return userRepository.save(newUser);
                 });

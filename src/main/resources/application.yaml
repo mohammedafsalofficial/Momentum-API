@@ -5,12 +5,34 @@ spring:
     profiles:
         active: dev
 
+    datasource:
+        url: ${MOMENTUM_DB_URL}
+        username: ${MOMENTUM_DB_USERNAME}
+        password: ${MOMENTUM_DB_PASSWORD}
+        driver-class-name: org.postgresql.Driver
+
+    mail:
+        host: ${MOMENTUM_MAIL_HOST}
+        port: ${MOMENTUM_MAIL_PORT}
+        username: ${MOMENTUM_MAIL_USERNAME}
+        password: ${MOMENTUM_MAIL_PASSWORD}  # App Password
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+                        required: true
+
 jwt:
-    secret: M2Y0YjU2YzgxYTA5M2RlZjU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNA==
-    expiration: 900000  # 15 minutes
+    secret: ${MOMENTUM_JWT_SECRET}
+    expiration: ${MOMENTUM_JWT_EXPIRATION}  # In Minutes
 
 google:
-    client-id: ${GOOGLE_CLIENT_ID}
+    client-id: ${MOMENTUM_GOOGLE_CLIENT_ID}
 
 refresh-token:
-    expiration-days: 30
+    expiration: ${MOMENTUM_REFRESH_TOKEN_EXPIRATION}  # In Days
+
+server:
+    port: 8080

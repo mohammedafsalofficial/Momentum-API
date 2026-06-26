@@ -20,7 +20,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    @Value("${refresh-token.expiration-days}")
+    @Value("${refresh-token.expiration}")
     private long expirationDays;
 
     /**

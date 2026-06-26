@@ -40,6 +40,9 @@ public class User {
     private IdentityProvider idp;
 
     @Column(nullable = false)
+    private boolean emailVerified;
+
+    @Column(nullable = false)
     private boolean enabled;
 
     @Column(nullable = false)
@@ -62,11 +65,14 @@ public class User {
         enabled = true;
         accountNonLocked = true;
         role = UserRole.ROLE_USER;
-        if (idp == null) idp = IdentityProvider.LOCAL;
     }
 
     @PreUpdate
     void preUpdate() {
         updatedAt = Instant.now();
+    }
+
+    public void markEmailVerified() {
+        this.emailVerified = true;
     }
 }

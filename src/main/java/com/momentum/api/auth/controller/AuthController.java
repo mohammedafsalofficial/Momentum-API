@@ -1,12 +1,11 @@
 package com.momentum.api.auth.controller;
 
-import com.momentum.api.auth.dto.request.GoogleSignInRequest;
-import com.momentum.api.auth.dto.request.LoginRequest;
-import com.momentum.api.auth.dto.request.RegisterRequest;
+import com.momentum.api.auth.dto.request.*;
 import com.momentum.api.auth.dto.response.LoginResponse;
 import com.momentum.api.auth.dto.response.RefreshResponse;
 import com.momentum.api.auth.dto.response.UserResponse;
 import com.momentum.api.auth.service.AuthenticationService;
+import com.momentum.api.auth.service.EmailVerificationService;
 import com.momentum.api.common.response.SuccessResponse;
 import com.momentum.api.common.service.CookieService;
 import jakarta.validation.Valid;
@@ -23,13 +22,14 @@ public class AuthController {
 
     private final AuthenticationService authenticationService;
     private final CookieService cookieService;
+    private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
     public ResponseEntity<SuccessResponse<UserResponse>> register(@RequestBody @Valid RegisterRequest requestPayload) {
         UserResponse responseDto = authenticationService.register(requestPayload);
         SuccessResponse<UserResponse> responsePayload = SuccessResponse.<UserResponse>builder()
                 .success(true)
-                .message("User registered successfully")
+                .message("Registration successful. Please check your email to verify your account.")
                 .data(responseDto)
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(responsePayload);
@@ -69,6 +69,29 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
                 .body(responsePayload);
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<SuccessResponse<Void>> verifyEmail(@RequestBody @Valid VerifyEmailRequest requestPayload) {
+        emailVerificationService.verifyEmail(requestPayload.getOtp(), requestPayload.getEmail());
+        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+                .success(true)
+                .message("Email verified successfully. You can now log in now.")
+                .build();
+        return ResponseEntity.ok(responsePayload);
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<SuccessResponse<Void>> resendVerification(
+            @RequestBody @Valid ResendVerificationRequest requestPayload) {
+        emailVerificationService.resendVerification(requestPayload.getEmail());
+        // Always the same response regardless of whether email exists/is verified —
+        // prevents account enumeration
+        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+                .success(true)
+                .message("If that email is registered and unverified, a new link has been sent to your email.")
+                .build();
+        return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/refresh")

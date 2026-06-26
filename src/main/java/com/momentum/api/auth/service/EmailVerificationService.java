@@ -45,7 +45,14 @@ public class EmailVerificationService {
         emailVerificationTokenRepository.save(token);
 
         // Runs async - registration does not block on SMTP
-        emailService.sendVerificationEmail(user.getEmail(), token.getToken());
+        emailService.sendEmail(
+                user.getEmail(),
+                "Your Momentum verification code",
+                "Your verification code is:\n\n"
+                        + token.getToken() + "\n\n"
+                        + "This code expires in 15 minutes.\n"
+                        + "If you didn't create an account, you can ignore this email."
+        );
     }
 
     /**

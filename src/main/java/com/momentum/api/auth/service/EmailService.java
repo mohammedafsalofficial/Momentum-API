@@ -17,17 +17,12 @@ public class EmailService {
     private String fromAddress;
 
     @Async
-    public void sendVerificationEmail(String toAddress, String otp) {
+    public void sendEmail(String toAddress, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(toAddress);
-        message.setSubject("Your Momentum verification code");
-        message.setText(
-                "Your verification code is:\n\n"
-                        + otp + "\n\n"
-                        + "This code expires in 15 minutes.\n"
-                        + "If you didn't create an account, you can ignore this email."
-        );
+        message.setSubject(subject);
+        message.setText(text);
         mailSender.send(message);
     }
 }

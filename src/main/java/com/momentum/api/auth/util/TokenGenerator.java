@@ -16,4 +16,13 @@ public class TokenGenerator {
         int otp = secureRandom.nextInt(1_000_000);  // 0 to 999999
         return String.format("%06d", otp);  // zero-pad to always be 6 digits
     }
+
+    /**
+     * Opaque random token for password reset authorization
+     */
+    public static String generateResetToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
 }

@@ -6,6 +6,7 @@ import com.momentum.api.auth.model.EmailVerificationToken;
 import com.momentum.api.auth.model.User;
 import com.momentum.api.auth.repository.EmailVerificationTokenRepository;
 import com.momentum.api.auth.repository.UserRepository;
+import com.momentum.api.auth.util.Constants;
 import com.momentum.api.auth.util.TokenGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,6 @@ public class EmailVerificationService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
-
-    private static final Duration TOKEN_TTL = Duration.ofMinutes(15);
  
     /**
      * Creates a fresh token and sends the verification email.
@@ -39,7 +38,7 @@ public class EmailVerificationService {
         EmailVerificationToken token = EmailVerificationToken.builder()
                 .token(TokenGenerator.generateOtp())
                 .user(user)
-                .expiresAt(Instant.now().plus(TOKEN_TTL))
+                .expiresAt(Instant.now().plus(Constants.OTP_TTL))
                 .build();
 
         emailVerificationTokenRepository.save(token);

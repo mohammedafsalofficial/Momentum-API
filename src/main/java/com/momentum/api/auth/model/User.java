@@ -3,10 +3,7 @@ package com.momentum.api.auth.model;
 import com.momentum.api.auth.enums.IdentityProvider;
 import com.momentum.api.auth.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -74,5 +71,9 @@ public class User {
 
     public void markEmailVerified() {
         this.emailVerified = true;
+    }
+
+    public void updatePassword(String hashedPassword) {
+        this.password = hashedPassword;
     }
 }

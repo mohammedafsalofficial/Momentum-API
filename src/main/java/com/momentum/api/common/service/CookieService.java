@@ -46,4 +46,14 @@ public class CookieService {
                 .sameSite("Strict")
                 .build();
     }
+
+    public ResponseCookie createCookie(String cookieName, String cookieValue, String path, long maxAgeInMinutes) {
+        return ResponseCookie.from(cookieName, cookieValue)
+                .httpOnly(true)
+                .secure(false)
+                .path(path)
+                .maxAge(Duration.ofMinutes(maxAgeInMinutes))
+                .sameSite("Strict")
+                .build();
+    }
 }

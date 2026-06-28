@@ -29,7 +29,7 @@ public class AuthController {
         UserResponse responseDto = authenticationService.register(requestPayload);
         SuccessResponse<UserResponse> responsePayload = SuccessResponse.<UserResponse>builder()
                 .success(true)
-                .message("Registration successful. Please check your email to verify your account.")
+                .message("Registration successful. Please check your email for OTP to verify your account.")
                 .data(responseDto)
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(responsePayload);
@@ -89,7 +89,7 @@ public class AuthController {
         // prevents account enumeration
         SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
                 .success(true)
-                .message("If that email is registered and unverified, a new link has been sent to your email.")
+                .message("If that email is registered and unverified, a new OTP has been sent to your email.")
                 .build();
         return ResponseEntity.ok(responsePayload);
     }
@@ -123,5 +123,47 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookieService.clearAccessTokenCookie().toString())
                 .header(HttpHeaders.SET_COOKIE, cookieService.clearRefreshTokenCookie().toString())
                 .body(responsePayload);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<SuccessResponse<Void>> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest requestPayload) {
+        authenticationService.forgotPassword(requestPayload);
+        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+                .success(true)
+                .message("If that email is registered, a new OTP has been sent to your email.")
+                .build();
+        return ResponseEntity.ok(responsePayload);
+    }
+
+    @GetMapping("/verify-reset-otp")
+    public ResponseEntity<SuccessResponse<Void>> verifyResetOtp(
+            @RequestBody @Valid VerifyResetOtpRequest requestPayload) {
+        String resetToken = authenticationService.verifyResetOtp(requestPayload);
+        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+                .success(true)
+                .message("OTP verified successfully. You can now reset your password.")
+                .build();
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        cookieService.createCookie(
+                                "password_reset_token",
+                                resetToken,
+                                "/reset-password",
+                                10
+                        ).toString()
+                )
+                .body(responsePayload);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<SuccessResponse<Void>> resetPassword(@RequestBody @Valid ResetPasswordRequest requestPayload) {
+        authenticationService.resetPassword(requestPayload);
+        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+                .success(true)
+                .message("")
+                .build();
+        return ResponseEntity.ok(responsePayload);
     }
 }

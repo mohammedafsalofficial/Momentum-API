@@ -1,18 +1,19 @@
 package com.momentum.api.auth.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.momentum.api.auth.dto.request.GoogleSignInRequest;
-import com.momentum.api.auth.dto.request.LoginRequest;
-import com.momentum.api.auth.dto.request.RegisterRequest;
+import com.momentum.api.auth.dto.request.*;
 import com.momentum.api.auth.dto.response.UserResponse;
 import com.momentum.api.auth.enums.IdentityProvider;
-import com.momentum.api.auth.exception.EmailAlreadyExistsException;
-import com.momentum.api.auth.exception.EmailNotVerifiedException;
-import com.momentum.api.auth.exception.LoginFailureException;
+import com.momentum.api.auth.exception.*;
+import com.momentum.api.auth.model.PasswordResetToken;
 import com.momentum.api.auth.model.RefreshToken;
 import com.momentum.api.auth.model.User;
+import com.momentum.api.auth.repository.PasswordResetTokenRepository;
 import com.momentum.api.auth.repository.UserRepository;
+import com.momentum.api.auth.util.Constants;
 import com.momentum.api.auth.util.JwtUtil;
+import com.momentum.api.auth.util.TokenGenerator;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,8 @@ public class AuthenticationService {
     private final CustomUserDetailsService customUserDetailsService;
     private final RefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
 
     public UserResponse register(RegisterRequest requestPayload) {
         if (userRepository.existsByEmail(requestPayload.getEmail())) {
@@ -121,6 +126,74 @@ public class AuthenticationService {
 
     public void logout(String refreshToken) {
         refreshTokenService.deleteByToken(refreshToken);
+    }
+
+    public void forgotPassword(ForgotPasswordRequest requestPayload) {
+        userRepository.findByEmail(requestPayload.getEmail()).ifPresent((existingUser) -> {
+            passwordResetTokenRepository.deleteAllByUser(existingUser);
+
+            PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                    .token(TokenGenerator.generateOtp())
+                    .user(existingUser)
+                    .expiresAt(Instant.now().plus(Constants.OTP_TTL))
+                    .build();
+
+            passwordResetTokenRepository.save(passwordResetToken);
+
+            emailService.sendEmail(
+                    existingUser.getEmail(),
+                    "Reset your Momentum password",
+                    "Your password reset code is:\n\n"
+                            + passwordResetToken.getToken() + "\n\n"
+                            + "This code expires in 15 minutes.\n"
+                            + "If you didn't request a password reset, you can ignore this email."
+            );
+        });
+    }
+
+    public String verifyResetOtp(@Valid VerifyResetOtpRequest requestPayload) {
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository
+                .findByToken(requestPayload.getOtp())
+                .orElseThrow(InvalidPasswordResetTokenException::new);
+
+        if (!passwordResetToken.getUser().getEmail().equals(requestPayload.getEmail())) {
+            throw new InvalidPasswordResetTokenException();
+        }
+
+        if (passwordResetToken.isExpired()) {
+            passwordResetTokenRepository.delete(passwordResetToken);
+            throw new InvalidPasswordResetTokenException();
+        }
+
+        // OTP is valid — consume it immediately (single-use)
+        passwordResetTokenRepository.delete(passwordResetToken);
+
+        // Issue a dedicated short-lived reset token
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(TokenGenerator.generateResetToken())
+                .user(passwordResetToken.getUser())
+                .expiresAt(Instant.now().plus(Constants.RESET_TOKEN_TTL))
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        return resetToken.getToken();
+    }
+
+    public void resetPassword(ResetPasswordRequest requestPayload) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(requestPayload.getResetToken())
+                .orElseThrow(InvalidPasswordResetTokenException::new);
+
+        if (resetToken.isExpired()) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new InvalidPasswordResetTokenException();
+        }
+
+        User user = resetToken.getUser();
+        user.updatePassword(passwordEncoder.encode(requestPayload.getNewPassword()));
+        userRepository.save(user);
+
+        passwordResetTokenRepository.delete(resetToken);
     }
 
     /**

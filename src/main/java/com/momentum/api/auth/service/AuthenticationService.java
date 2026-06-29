@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,12 +41,35 @@ public class AuthenticationService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
 
+    /**
+     * Registers a new LOCAL user account and sends an email verification OTP.
+     *
+     * <p>If an unverified account already exists for the given email, a fresh OTP is
+     * sent and {@link EmailVerificationPendingException} is thrown — this handles the
+     * case where a user registered but never verified, then tries to register again.
+     *
+     * <p>If a verified account already exists for the given email,
+     * {@link EmailAlreadyExistsException} is thrown.
+     *
+     * <p>On success, the account is created with {@code emailVerified = false}.
+     * No tokens are issued — the user must verify their email before logging in.
+     *
+     * @param requestPayload the registration details (email, password, name)
+     * @return {@link UserResponse} representing the newly created account
+     * @throws EmailVerificationPendingException if the email is registered but unverified
+     * @throws EmailAlreadyExistsException if the email is already registered and verified
+     */
     public UserResponse register(RegisterRequest requestPayload) {
-        if (userRepository.existsByEmail(requestPayload.getEmail())) {
+        userRepository.findByEmail(requestPayload.getEmail()).ifPresent((existingUser) -> {
+            if (!existingUser.isEmailVerified()) {
+                // Account exists but was never verified — resend OTP
+                emailVerificationService.createAndSendVerificationToken(existingUser);
+                throw new EmailVerificationPendingException();
+            }
             throw new EmailAlreadyExistsException(requestPayload.getEmail());
-        }
+        });
 
-        User user = User.builder()
+        User newUser = User.builder()
                 .email(requestPayload.getEmail())
                 .password(passwordEncoder.encode(requestPayload.getPassword()))
                 .firstName(requestPayload.getFirstName())
@@ -54,7 +78,7 @@ public class AuthenticationService {
                 .emailVerified(false)
                 .build();
 
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.save(newUser);
 
         emailVerificationService.createAndSendVerificationToken(savedUser);
 

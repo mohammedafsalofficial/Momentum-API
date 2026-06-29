@@ -104,7 +104,8 @@ public class AuthenticationService {
         return generateTokenPair(user);
     }
 
-    public TokenPair refresh(String rawRefreshToken) {
+    public TokenPair refresh(RefreshRequest requestPayload) {
+        String rawRefreshToken = requestPayload.getRefreshToken();
         RefreshToken validated = refreshTokenService.validateAndDetectReuse(rawRefreshToken);
         RefreshToken rotated = refreshTokenService.rotate(validated);
         String accessToken = generateAccessToken(rotated.getUser());
@@ -124,8 +125,8 @@ public class AuthenticationService {
                 .build();
     }
 
-    public void logout(String refreshToken) {
-        refreshTokenService.deleteByToken(refreshToken);
+    public void logout(RefreshRequest requestPayload) {
+        refreshTokenService.deleteByToken(requestPayload.getRefreshToken());
     }
 
     public void forgotPassword(ForgotPasswordRequest requestPayload) {

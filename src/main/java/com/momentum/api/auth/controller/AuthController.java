@@ -4,6 +4,7 @@ import com.momentum.api.auth.dto.request.*;
 import com.momentum.api.auth.dto.response.LoginResponse;
 import com.momentum.api.auth.dto.response.RefreshResponse;
 import com.momentum.api.auth.dto.response.UserResponse;
+import com.momentum.api.auth.dto.response.VerifyResetPasswordResponse;
 import com.momentum.api.auth.service.AuthenticationService;
 import com.momentum.api.auth.service.EmailVerificationService;
 import com.momentum.api.common.response.SuccessResponse;
@@ -47,10 +48,7 @@ public class AuthController {
                 .message("User logged in successfully")
                 .data(responseDto)
                 .build();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
-                .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
-                .body(responsePayload);
+        return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/google")
@@ -65,10 +63,7 @@ public class AuthController {
                 .message("User logged in successfully")
                 .data(responseDto)
                 .build();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
-                .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
-                .body(responsePayload);
+        return ResponseEntity.ok(responsePayload);
     }
 
     @GetMapping("/verify-email")
@@ -95,8 +90,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<SuccessResponse<RefreshResponse>> refresh(@CookieValue(name = "refresh_token") String refreshToken) {
-        AuthenticationService.TokenPair tokens = authenticationService.refresh(refreshToken);
+    public ResponseEntity<SuccessResponse<RefreshResponse>> refresh(@RequestBody @Valid RefreshRequest requestPayload) {
+        AuthenticationService.TokenPair tokens = authenticationService.refresh(requestPayload);
         RefreshResponse responseDto = RefreshResponse.builder()
                 .accessToken(tokens.accessToken())
                 .refreshToken(tokens.refreshToken())
@@ -106,23 +101,17 @@ public class AuthController {
                 .message("Token refreshed successfully.")
                 .data(responseDto)
                 .build();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookieService.buildAccessTokenCookie(tokens.accessToken()).toString())
-                .header(HttpHeaders.SET_COOKIE, cookieService.buildRefreshTokenCookie(tokens.refreshToken()).toString())
-                .body(responsePayload);
+        return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<SuccessResponse<Void>> logout(@CookieValue(name = "refresh_token") String refreshToken) {
-        authenticationService.logout(refreshToken);
+    public ResponseEntity<SuccessResponse<Void>> logout(@RequestBody @Valid RefreshRequest requestPayload) {
+        authenticationService.logout(requestPayload);
         SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
                 .success(true)
                 .message("Logged out successfully.")
                 .build();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookieService.clearAccessTokenCookie().toString())
-                .header(HttpHeaders.SET_COOKIE, cookieService.clearRefreshTokenCookie().toString())
-                .body(responsePayload);
+        return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/forgot-password")
@@ -137,24 +126,18 @@ public class AuthController {
     }
 
     @GetMapping("/verify-reset-otp")
-    public ResponseEntity<SuccessResponse<Void>> verifyResetOtp(
+    public ResponseEntity<SuccessResponse<VerifyResetPasswordResponse>> verifyResetOtp(
             @RequestBody @Valid VerifyResetOtpRequest requestPayload) {
         String resetToken = authenticationService.verifyResetOtp(requestPayload);
-        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
+        VerifyResetPasswordResponse responseDto = VerifyResetPasswordResponse.builder()
+                .passwordResetToken(resetToken)
+                .build();
+        SuccessResponse<VerifyResetPasswordResponse> responsePayload = SuccessResponse.<VerifyResetPasswordResponse>builder()
                 .success(true)
                 .message("OTP verified successfully. You can now reset your password.")
+                .data(responseDto)
                 .build();
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        cookieService.createCookie(
-                                "password_reset_token",
-                                resetToken,
-                                "/reset-password",
-                                10
-                        ).toString()
-                )
-                .body(responsePayload);
+        return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/reset-password")

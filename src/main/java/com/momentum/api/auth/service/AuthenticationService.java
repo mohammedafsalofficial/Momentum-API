@@ -54,7 +54,15 @@ public class AuthenticationService {
      * <p>On success, the account is created with {@code emailVerified = false}.
      * No tokens are issued — the user must verify their email before logging in.
      *
-     * @param requestPayload the registration details (email, password, name)
+     * @param requestPayload the registration details:
+     *                       <ul>
+     *                         <li>{@code email} — must be a valid email address</li>
+     *                         <li>{@code password} — 8–20 characters, must contain at least
+     *                             one uppercase letter, one lowercase letter, one digit,
+     *                             and one special character</li>
+     *                         <li>{@code firstName} — required, max 50 characters</li>
+     *                         <li>{@code lastName} — optional, max 50 characters</li>
+     *                       </ul>
      * @return {@link UserResponse} representing the newly created account
      * @throws EmailVerificationPendingException if the email is registered but unverified
      * @throws EmailAlreadyExistsException if the email is already registered and verified
@@ -103,27 +111,39 @@ public class AuthenticationService {
         }
     }
 
+    /**
+     * Authenticates a user via Google Sign-In using a Google ID token.
+     *
+     * <p>If the email from the verified token belongs to an existing account, that account
+     * is used directly regardless of how it was originally created. If no account exists,
+     * a new GOOGLE account is created with {@code emailVerified = true} — Google has
+     * already verified ownership of the email.
+     *
+     * @param requestPayload contains the Google ID token issued by the client
+     * @return {@link TokenPair} containing a fresh access token and refresh token
+     * @throws InvalidGoogleTokenException
+     *         if the ID token is invalid, expired, or fails verification
+     */
     public TokenPair googleSignIn(GoogleSignInRequest requestPayload) {
         GoogleIdToken.Payload payload = googleTokenVerifierService.verify(requestPayload.getIdToken());
 
         String email = payload.getEmail();
         String firstName = (String) payload.get("given_name");
         String lastName = (String) payload.get("family_name");
-        String picture = (String) payload.get("picture");
+        String pictureUrl = (String) payload.get("picture");
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .password(null)
-                            .firstName(firstName != null ? firstName : email)
-                            .lastName(lastName)
-                            .pictureUrl(picture)
-                            .idp(IdentityProvider.GOOGLE)
-                            .emailVerified(true)
-                            .build();
-                    return userRepository.save(newUser);
-                });
+                .orElseGet(() -> userRepository.save(
+                        User.builder()
+                                .email(email)
+                                .password(null)
+                                .firstName(firstName != null ? firstName : email)
+                                .lastName(lastName)
+                                .pictureUrl(pictureUrl)
+                                .idp(IdentityProvider.GOOGLE)
+                                .emailVerified(true) // Google already verified ownership of this email
+                                .build()
+                ));
 
         return generateTokenPair(user);
     }
@@ -222,15 +242,36 @@ public class AuthenticationService {
     }
 
     /**
-     * Simple record to carry both tokens
+     * Carries both tokens issued after a successful authentication.
+     *
+     * @param accessToken  short-lived JWT used to authorize API requests (15 minutes)
+     * @param refreshToken long-lived opaque token used to rotate the access token (30 days)
      */
     public record TokenPair(String accessToken, String refreshToken) {}
 
+    /**
+     * Generates a signed JWT access token for the given user.
+     *
+     * <p>Loads the user's {@link UserDetails} by email to ensure the latest
+     * roles and state are reflected in the token.
+     *
+     * @param user the authenticated user
+     * @return a signed JWT access token string
+     */
     private String generateAccessToken(User user) {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
         return jwtUtil.generateToken(userDetails);
     }
 
+    /**
+     * Generates a full {@link TokenPair} for the given user.
+     *
+     * <p>Creates a new refresh token in the database and pairs it with a
+     * freshly signed access token.
+     *
+     * @param user the authenticated user
+     * @return {@link TokenPair} containing the access token and refresh token
+     */
     private TokenPair generateTokenPair(User user) {
         String accessToken = generateAccessToken(user);
         RefreshToken refreshToken = refreshTokenService.create(user);

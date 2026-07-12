@@ -13,6 +13,7 @@ import com.momentum.api.auth.repository.UserRepository;
 import com.momentum.api.auth.util.Constants;
 import com.momentum.api.auth.util.JwtUtil;
 import com.momentum.api.auth.util.TokenGenerator;
+import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -40,6 +42,7 @@ public class AuthenticationService {
     private final EmailVerificationService emailVerificationService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /**
      * Registers a new LOCAL user account and sends an email verification OTP.
@@ -169,7 +172,12 @@ public class AuthenticationService {
                 .build();
     }
 
-    public void logout(RefreshRequest requestPayload) {
+    public void logout(LogoutRequest requestPayload) {
+        String token = requestPayload.getAccessToken();
+        Claims claims = jwtUtil.extractAllClaimsAllowExpired(token);
+        String jti = claims.getId();
+        Date tokenExpiration = claims.getExpiration();
+        tokenBlacklistService.blacklist(jti, tokenExpiration);
         refreshTokenService.deleteByToken(requestPayload.getRefreshToken());
     }
 

@@ -102,7 +102,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<SuccessResponse<Void>> logout(@RequestBody @Valid RefreshRequest requestPayload) {
+    public ResponseEntity<SuccessResponse<Void>> logout(@RequestBody @Valid LogoutRequest requestPayload) {
         authenticationService.logout(requestPayload);
         SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
                 .success(true)

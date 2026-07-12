@@ -8,10 +8,8 @@ import com.momentum.api.auth.dto.response.VerifyResetPasswordResponse;
 import com.momentum.api.auth.service.AuthenticationService;
 import com.momentum.api.auth.service.EmailVerificationService;
 import com.momentum.api.common.response.SuccessResponse;
-import com.momentum.api.common.service.CookieService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthenticationService authenticationService;
-    private final CookieService cookieService;
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")

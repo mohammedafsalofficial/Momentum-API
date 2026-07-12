@@ -5,15 +5,21 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -24,6 +30,10 @@ public class JwtUtil {
 
     @Value("${jwt.expiration:900000}")  // Default 15 minutes
     private long jwtExpirationMs;
+
+    private static final String AUTHORITIES_KEY = "auth";
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(JwtUtil.class);
 
     /**
      * Reusable helper to generate the SecretKey matching modern cryptographic standards
@@ -37,14 +47,16 @@ public class JwtUtil {
      * Generate token with custom claims based on Spring Security's UserDetails
      */
     public String generateToken(UserDetails userDetails) {
+        String authorities = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
         Map<String, Object> claims = new HashMap<>();
-        // Optional: Map Spring Security authorities to a custom claim
         claims.put("roles", userDetails.getAuthorities());
+        claims.put(AUTHORITIES_KEY, authorities);
         return createToken(claims, userDetails.getUsername());
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .claims(claims)
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
@@ -90,5 +102,20 @@ public class JwtUtil {
 
     private boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
+    }
+
+    /**
+     * Extract jti from a token
+     */
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
+    public Authentication getAuthentication(String token) {
+        Claims claims = extractAllClaims(token);
+        Collection<? extends GrantedAuthority> authorities = Arrays.asList(claims.get(AUTHORITIES_KEY).toString().split(",")).stream()
+                .map(SimpleGrantedAuthority::new).toList();
+        User principal = new User(claims.getSubject(), "", authorities);
+        return new UsernamePasswordAuthenticationToken(principal, "", authorities);
     }
 }

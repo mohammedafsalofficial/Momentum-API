@@ -1,4 +1,4 @@
-package com.momentum.api.auth.filter;
+package com.momentum.api.filter;
 
 import com.momentum.api.auth.util.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;

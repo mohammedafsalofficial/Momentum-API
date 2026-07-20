@@ -31,8 +31,18 @@ public class ThrottlingFilter extends OncePerRequestFilter {
     private static final Duration REFILL_PERIOD = Duration.ofMinutes(1);
     private static final long NANOS_PER_TOKEN = REFILL_PERIOD.toNanos() / REFILL_TOKENS;
 
+    private static final List<String> EXCLUDED_PATHS = List.of(
+            "/api/health", "/api/healthz", "/api/livez", "/api/readyz", "/actuator/health"
+    );
+
     private final ProxyManager<String> bucketProxyManager;
     private final ObjectMapper objectMapper;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
+    }
 
     @Override
     protected void doFilterInternal(

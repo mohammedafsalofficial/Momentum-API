@@ -1,22 +1,18 @@
 spring:
     application:
         name: api
-
     profiles:
         active: dev
-
     datasource:
         url: ${MOMENTUM_DB_URL}
         username: ${MOMENTUM_DB_USERNAME}
         password: ${MOMENTUM_DB_PASSWORD}
         driver-class-name: org.postgresql.Driver
-
     data:
         redis:
             host: ${MOMENTUM_REDIS_HOST:localhost}
             port: ${MOMENTUM_REDIS_PORT:6379}
             password: ${MOMENTUM_REDIS_PASSWORD:}
-
     mail:
         host: ${MOMENTUM_MAIL_HOST}
         port: ${MOMENTUM_MAIL_PORT}
@@ -29,16 +25,32 @@ spring:
                     starttls:
                         enable: true
                         required: true
-
 jwt:
     secret: ${MOMENTUM_JWT_SECRET}
     expiration: ${MOMENTUM_JWT_EXPIRATION}  # In Minutes
-
 google:
     client-id: ${MOMENTUM_GOOGLE_CLIENT_ID}
-
 refresh-token:
     expiration: ${MOMENTUM_REFRESH_TOKEN_EXPIRATION}  # In Days
-
 server:
     port: 8080
+management:
+    endpoint:
+        health:
+            probes:
+                enabled: true
+            show-details: never
+            group:
+                readiness:
+                    include: readinessState, db, redis
+                liveness:
+                    include: livenessState
+    health:
+        livenessstate:
+            enabled: true
+        readinessstate:
+            enabled: true
+    endpoints:
+        web:
+            exposure:
+                include: health

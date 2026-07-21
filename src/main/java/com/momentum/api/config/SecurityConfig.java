@@ -1,6 +1,7 @@
 package com.momentum.api.config;
 
 import com.momentum.api.filter.JwtAuthFilter;
+import com.momentum.api.filter.RequestLoggingFilter;
 import com.momentum.api.filter.ThrottlingFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final ThrottlingFilter throttlingFilter;
+    private final RequestLoggingFilter requestLoggingFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -38,6 +40,7 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(throttlingFilter, JwtAuthFilter.class)
+                .addFilterBefore(requestLoggingFilter, ThrottlingFilter.class)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();

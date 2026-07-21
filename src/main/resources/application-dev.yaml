@@ -17,3 +17,4 @@ logging:
     level:
         org.hibernate.SQL: DEBUG
         org.hibernate.orm.jdbc.bind: TRACE
+        com.momentum.api.filter.RequestLoggingFilter: DEBUG

@@ -13,6 +13,7 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -22,6 +23,16 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final int MAX_PAYLOAD_LENGTH = 1000;
     private static final int CACHE_LIMIT = 4096; // bytes cached from the request body - 4096 bytes -> 4kb
+
+    private static final List<String> EXCLUDED_PATHS = List.of(
+            "/api/health", "/api/healthz", "/api/livez", "/api/readyz"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String uri = request.getRequestURI();
+        return EXCLUDED_PATHS.contains(uri) || uri.startsWith("/actuator/");
+    }
 
     @Override
     protected void doFilterInternal(

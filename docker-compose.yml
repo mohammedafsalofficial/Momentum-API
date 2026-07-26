@@ -21,14 +21,14 @@ services:
     image: redis:7-alpine
     container_name: momentum-redis
     restart: unless-stopped
-    command: >
-      sh -c '
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
         if [ -n "$$MOMENTUM_REDIS_PASSWORD" ]; then
-          redis-server --requirepass "$$MOMENTUM_REDIS_PASSWORD";
+          redis-server --requirepass "$$MOMENTUM_REDIS_PASSWORD"
         else
-          redis-server;
+          redis-server
         fi
-      '
     environment:
       MOMENTUM_REDIS_PASSWORD: ${MOMENTUM_REDIS_PASSWORD:-}
     ports:

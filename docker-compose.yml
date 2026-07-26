@@ -1,81 +1,81 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: momentum-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${MOMENTUM_DB_NAME:-momentum_db}
-      POSTGRES_USER: ${MOMENTUM_DB_USERNAME:-momentum}
-      POSTGRES_PASSWORD: ${MOMENTUM_DB_PASSWORD:-momentum}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${MOMENTUM_DB_USERNAME:-momentum}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    postgres:
+        image: postgres:16-alpine
+        container_name: momentum-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${MOMENTUM_DB_NAME:-momentum_db}
+            POSTGRES_USER: ${MOMENTUM_DB_USERNAME:-momentum}
+            POSTGRES_PASSWORD: ${MOMENTUM_DB_PASSWORD:-momentum}
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${MOMENTUM_DB_USERNAME:-momentum}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: momentum-redis
-    restart: unless-stopped
-    command: >
-      sh -c '
-        if [ -n "$$MOMENTUM_REDIS_PASSWORD" ]; then
-          redis-server --requirepass "$$MOMENTUM_REDIS_PASSWORD";
-        else
-          redis-server;
-        fi
-      '
-    environment:
-      MOMENTUM_REDIS_PASSWORD: ${MOMENTUM_REDIS_PASSWORD:-}
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    redis:
+        image: redis:7-alpine
+        container_name: momentum-redis
+        restart: unless-stopped
+        entrypoint: ["sh", "-c"]
+        command:
+          - |
+            if [ -n "$$MOMENTUM_REDIS_PASSWORD" ]; then
+              redis-server --requirepass "$$MOMENTUM_REDIS_PASSWORD"
+            else
+              redis-server
+            fi
+        environment:
+            MOMENTUM_REDIS_PASSWORD: ${MOMENTUM_REDIS_PASSWORD:-}
+        ports:
+            - "6379:6379"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: momentum-api
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: momentum-api
+        restart: unless-stopped
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        environment:
+            SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
 
-      # Database
-      MOMENTUM_DB_URL: jdbc:postgresql://postgres:5432/${MOMENTUM_DB_NAME:-momentum_db}
-      MOMENTUM_DB_USERNAME: ${MOMENTUM_DB_USERNAME:-momentum}
-      MOMENTUM_DB_PASSWORD: ${MOMENTUM_DB_PASSWORD:-momentum}
+            # Database
+            MOMENTUM_DB_URL: jdbc:postgresql://postgres:5432/${MOMENTUM_DB_NAME:-momentum_db}
+            MOMENTUM_DB_USERNAME: ${MOMENTUM_DB_USERNAME:-momentum}
+            MOMENTUM_DB_PASSWORD: ${MOMENTUM_DB_PASSWORD:-momentum}
 
-      # Redis
-      MOMENTUM_REDIS_HOST: redis
-      MOMENTUM_REDIS_PORT: 6379
-      MOMENTUM_REDIS_PASSWORD: ${MOMENTUM_REDIS_PASSWORD:-}
+            # Redis
+            MOMENTUM_REDIS_HOST: redis
+            MOMENTUM_REDIS_PORT: 6379
+            MOMENTUM_REDIS_PASSWORD: ${MOMENTUM_REDIS_PASSWORD:-}
 
-      # Mail
-      MOMENTUM_MAIL_HOST: ${MOMENTUM_MAIL_HOST}
-      MOMENTUM_MAIL_PORT: ${MOMENTUM_MAIL_PORT}
-      MOMENTUM_MAIL_USERNAME: ${MOMENTUM_MAIL_USERNAME}
-      MOMENTUM_MAIL_PASSWORD: ${MOMENTUM_MAIL_PASSWORD}
+            # Mail
+            MOMENTUM_MAIL_HOST: ${MOMENTUM_MAIL_HOST}
+            MOMENTUM_MAIL_PORT: ${MOMENTUM_MAIL_PORT}
+            MOMENTUM_MAIL_USERNAME: ${MOMENTUM_MAIL_USERNAME}
+            MOMENTUM_MAIL_PASSWORD: ${MOMENTUM_MAIL_PASSWORD}
 
-      # Auth
-      MOMENTUM_JWT_SECRET: ${MOMENTUM_JWT_SECRET}
-      MOMENTUM_JWT_EXPIRATION: ${MOMENTUM_JWT_EXPIRATION:-60}
-      MOMENTUM_GOOGLE_CLIENT_ID: ${MOMENTUM_GOOGLE_CLIENT_ID}
-      MOMENTUM_REFRESH_TOKEN_EXPIRATION: ${MOMENTUM_REFRESH_TOKEN_EXPIRATION:-30}
-    ports:
-      - "8080:8080"
+            # Auth
+            MOMENTUM_JWT_SECRET: ${MOMENTUM_JWT_SECRET}
+            MOMENTUM_JWT_EXPIRATION: ${MOMENTUM_JWT_EXPIRATION:-60}
+            MOMENTUM_GOOGLE_CLIENT_ID: ${MOMENTUM_GOOGLE_CLIENT_ID}
+            MOMENTUM_REFRESH_TOKEN_EXPIRATION: ${MOMENTUM_REFRESH_TOKEN_EXPIRATION:-30}
+        ports:
+            - "8080:8080"
 
 volumes:
-  postgres_data:
+    postgres_data:

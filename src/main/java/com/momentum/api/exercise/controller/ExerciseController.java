@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/exercises")
@@ -16,6 +17,12 @@ import java.net.URI;
 public class ExerciseController {
 
     private final ExerciseService exerciseService;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ExerciseResponse> getExerciseById(@PathVariable UUID id) {
+        ExerciseResponse responseDto = exerciseService.getExerciseById(id);
+        return ResponseEntity.ok(responseDto);
+    }
 
     @PostMapping
     public ResponseEntity<ExerciseResponse> createExercise(@Valid @RequestBody ExerciseRequest requestPayload) {

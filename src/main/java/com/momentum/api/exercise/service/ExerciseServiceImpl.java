@@ -1,5 +1,6 @@
 package com.momentum.api.exercise.service;
 
+import com.momentum.api.exercise.ExerciseNotFoundException;
 import com.momentum.api.exercise.dto.request.ExerciseRequest;
 import com.momentum.api.exercise.dto.response.ExerciseResponse;
 import com.momentum.api.exercise.mapper.ExerciseMapper;
@@ -9,6 +10,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +26,17 @@ public class ExerciseServiceImpl implements ExerciseService {
     public ExerciseResponse createExercise(ExerciseRequest requestPayload) {
         Exercise exercise = exerciseMapper.toEntity(requestPayload);
         Exercise savedExercise = exerciseRepository.save(exercise);
-        log.debug(savedExercise.toString());
         return exerciseMapper.toResponse(savedExercise);
+    }
+
+    @Override
+    public ExerciseResponse getExerciseById(UUID id) {
+        Exercise exercise = findExerciseOrThrow(id);
+        return exerciseMapper.toResponse(exercise);
+    }
+
+    private Exercise findExerciseOrThrow(UUID id) {
+        return exerciseRepository.findById(id)
+                .orElseThrow((() -> new ExerciseNotFoundException(id)));
     }
 }

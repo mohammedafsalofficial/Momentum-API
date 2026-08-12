@@ -7,7 +7,7 @@ import com.momentum.api.auth.dto.response.UserResponse;
 import com.momentum.api.auth.dto.response.VerifyResetPasswordResponse;
 import com.momentum.api.auth.service.AuthenticationService;
 import com.momentum.api.auth.service.EmailVerificationService;
-import com.momentum.api.common.response.SuccessResponse;
+import com.momentum.api.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,127 +23,100 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
-    public ResponseEntity<SuccessResponse<UserResponse>> register(@RequestBody @Valid RegisterRequest requestPayload) {
+    public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody @Valid RegisterRequest requestPayload) {
         UserResponse responseDto = authenticationService.register(requestPayload);
-        SuccessResponse<UserResponse> responsePayload = SuccessResponse.<UserResponse>builder()
-                .success(true)
-                .message("Registration successful. Please check your email for OTP to verify your account.")
-                .data(responseDto)
-                .build();
+        ApiResponse<UserResponse> responsePayload = ApiResponse.success(
+                "Registration successful. Please check your email for OTP to verify your account.",
+                responseDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(responsePayload);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<SuccessResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest requestPayload) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest requestPayload) {
         AuthenticationService.TokenPair tokens = authenticationService.login(requestPayload);
         LoginResponse responseDto = LoginResponse.builder()
                 .accessToken(tokens.accessToken())
                 .refreshToken(tokens.refreshToken())
                 .build();
-        SuccessResponse<LoginResponse> responsePayload = SuccessResponse.<LoginResponse>builder()
-                .success(true)
-                .message("User logged in successfully")
-                .data(responseDto)
-                .build();
+        ApiResponse<LoginResponse> responsePayload = ApiResponse.success(
+                "User logged in successfully", responseDto);
         return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/google")
-    public ResponseEntity<SuccessResponse<LoginResponse>> googleSignIn(@RequestBody @Valid GoogleSignInRequest requestPayload) {
+    public ResponseEntity<ApiResponse<LoginResponse>> googleSignIn(@RequestBody @Valid GoogleSignInRequest requestPayload) {
         AuthenticationService.TokenPair tokens = authenticationService.googleSignIn(requestPayload);
         LoginResponse responseDto = LoginResponse.builder()
                 .accessToken(tokens.accessToken())
                 .refreshToken(tokens.refreshToken())
                 .build();
-        SuccessResponse<LoginResponse> responsePayload = SuccessResponse.<LoginResponse>builder()
-                .success(true)
-                .message("User logged in successfully")
-                .data(responseDto)
-                .build();
+        ApiResponse<LoginResponse> responsePayload = ApiResponse.success(
+                "User logged in successfully", responseDto);
         return ResponseEntity.ok(responsePayload);
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<SuccessResponse<Void>> verifyEmail(@RequestBody @Valid VerifyEmailRequest requestPayload) {
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestBody @Valid VerifyEmailRequest requestPayload) {
         emailVerificationService.verifyEmail(requestPayload.getOtp(), requestPayload.getEmail());
-        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
-                .success(true)
-                .message("Email verified successfully. You can now log in now.")
-                .build();
+        ApiResponse<Void> responsePayload = ApiResponse.success("Email verified successfully. You can now log in now.");
         return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<SuccessResponse<Void>> resendVerification(
+    public ResponseEntity<ApiResponse<Void>> resendVerification(
             @RequestBody @Valid ResendVerificationRequest requestPayload) {
         emailVerificationService.resendVerification(requestPayload.getEmail());
         // Always the same response regardless of whether email exists/is verified —
         // prevents account enumeration
-        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
-                .success(true)
-                .message("If that email is registered and unverified, a new OTP has been sent to your email.")
-                .build();
+        ApiResponse<Void> responsePayload = ApiResponse
+                .success("If that email is registered and unverified, a new OTP has been sent to your email.");
         return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<SuccessResponse<RefreshResponse>> refresh(@RequestBody @Valid RefreshRequest requestPayload) {
+    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody @Valid RefreshRequest requestPayload) {
         AuthenticationService.TokenPair tokens = authenticationService.refresh(requestPayload);
         RefreshResponse responseDto = RefreshResponse.builder()
                 .accessToken(tokens.accessToken())
                 .refreshToken(tokens.refreshToken())
                 .build();
-        SuccessResponse<RefreshResponse> responsePayload = SuccessResponse.<RefreshResponse>builder()
-                .success(true)
-                .message("Token refreshed successfully.")
-                .data(responseDto)
-                .build();
+        ApiResponse<RefreshResponse> responsePayload = ApiResponse.success(
+                "Token refreshed successfully.", responseDto);
         return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<SuccessResponse<Void>> logout(@RequestBody @Valid LogoutRequest requestPayload) {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody @Valid LogoutRequest requestPayload) {
         authenticationService.logout(requestPayload);
-        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
-                .success(true)
-                .message("Logged out successfully.")
-                .build();
+        ApiResponse<Void> responsePayload = ApiResponse.success("Logged out successfully.");
         return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<SuccessResponse<Void>> forgotPassword(
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
             @RequestBody @Valid ForgotPasswordRequest requestPayload) {
         authenticationService.forgotPassword(requestPayload);
-        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
-                .success(true)
-                .message("If that email is registered, a new OTP has been sent to your email.")
-                .build();
+        ApiResponse<Void> responsePayload = ApiResponse
+                .success("If that email is registered, a new OTP has been sent to your email.");
         return ResponseEntity.ok(responsePayload);
     }
 
     @GetMapping("/verify-reset-otp")
-    public ResponseEntity<SuccessResponse<VerifyResetPasswordResponse>> verifyResetOtp(
+    public ResponseEntity<ApiResponse<VerifyResetPasswordResponse>> verifyResetOtp(
             @RequestBody @Valid VerifyResetOtpRequest requestPayload) {
         String resetToken = authenticationService.verifyResetOtp(requestPayload);
         VerifyResetPasswordResponse responseDto = VerifyResetPasswordResponse.builder()
                 .passwordResetToken(resetToken)
                 .build();
-        SuccessResponse<VerifyResetPasswordResponse> responsePayload = SuccessResponse.<VerifyResetPasswordResponse>builder()
-                .success(true)
-                .message("OTP verified successfully. You can now reset your password.")
-                .data(responseDto)
-                .build();
+        ApiResponse<VerifyResetPasswordResponse> responsePayload = ApiResponse
+                .success("OTP verified successfully. You can now reset your password.", responseDto);
         return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<SuccessResponse<Void>> resetPassword(@RequestBody @Valid ResetPasswordRequest requestPayload) {
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody @Valid ResetPasswordRequest requestPayload) {
         authenticationService.resetPassword(requestPayload);
-        SuccessResponse<Void> responsePayload = SuccessResponse.<Void>builder()
-                .success(true)
-                .message("")
-                .build();
+        ApiResponse<Void> responsePayload = ApiResponse.success("Password reset successfully");
         return ResponseEntity.ok(responsePayload);
     }
 }

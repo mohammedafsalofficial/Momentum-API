@@ -1,5 +1,6 @@
 package com.momentum.api.common.response;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Getter
 @Builder
+@JsonFilter("apiResponseFilter")
 public class ApiResponse<T> {
 
     private boolean success;

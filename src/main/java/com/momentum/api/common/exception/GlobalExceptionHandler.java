@@ -1,7 +1,9 @@
 package com.momentum.api.common.exception;
 
+import com.momentum.api.common.response.ApiResponse;
 import com.momentum.api.common.response.ErrorResponse;
 import com.momentum.api.common.response.FieldError;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -40,5 +42,11 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(responsePayload);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse> handleException(Exception e) {
+        ApiResponse responsePayload = ApiResponse.error("Something went wrong!");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responsePayload);
     }
 }

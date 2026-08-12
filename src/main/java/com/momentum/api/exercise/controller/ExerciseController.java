@@ -1,5 +1,6 @@
 package com.momentum.api.exercise.controller;
 
+import com.momentum.api.common.response.ApiResponse;
 import com.momentum.api.exercise.dto.request.ExerciseRequest;
 import com.momentum.api.exercise.dto.response.ExerciseResponse;
 import com.momentum.api.exercise.service.ExerciseService;
@@ -19,14 +20,18 @@ public class ExerciseController {
     private final ExerciseService exerciseService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<ExerciseResponse> getExerciseById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<ExerciseResponse>> getExerciseById(@PathVariable UUID id) {
         ExerciseResponse responseDto = exerciseService.getExerciseById(id);
-        return ResponseEntity.ok(responseDto);
+        ApiResponse<ExerciseResponse> responsePayload =
+                ApiResponse.success("Exercise fetched successfully", responseDto);
+        return ResponseEntity.ok(responsePayload);
     }
 
     @PostMapping
-    public ResponseEntity<ExerciseResponse> createExercise(@Valid @RequestBody ExerciseRequest requestPayload) {
+    public ResponseEntity<ApiResponse<ExerciseResponse>> createExercise(@Valid @RequestBody ExerciseRequest requestPayload) {
         ExerciseResponse responseDto = exerciseService.createExercise(requestPayload);
-        return ResponseEntity.created(URI.create("/api/exercises/" + responseDto.getId())).body(responseDto);
+        ApiResponse<ExerciseResponse> responsePayload =
+                ApiResponse.success("Exercise created successfully", responseDto);
+        return ResponseEntity.created(URI.create("/api/exercises/" + responseDto.getId())).body(responsePayload);
     }
 }

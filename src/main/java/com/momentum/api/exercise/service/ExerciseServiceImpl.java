@@ -1,6 +1,6 @@
 package com.momentum.api.exercise.service;
 
-import com.momentum.api.exercise.ExerciseNotFoundException;
+import com.momentum.api.exercise.exception.ExerciseNotFoundException;
 import com.momentum.api.exercise.dto.request.ExerciseRequest;
 import com.momentum.api.exercise.dto.response.ExerciseResponse;
 import com.momentum.api.exercise.mapper.ExerciseMapper;

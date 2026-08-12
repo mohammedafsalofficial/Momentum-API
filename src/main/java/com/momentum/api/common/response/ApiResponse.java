@@ -13,7 +13,7 @@ public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
-    private List<FieldError> errors;
+    private List<FieldError> fieldErrors;
     @Builder.Default
     private Instant timestamp = Instant.now();
 
@@ -47,7 +47,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .errors(errors)
+                .fieldErrors(errors)
                 .build();
     }
 }

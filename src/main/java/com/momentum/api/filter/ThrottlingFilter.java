@@ -1,7 +1,7 @@
 package com.momentum.api.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.momentum.api.common.response.ErrorResponse;
+import com.momentum.api.common.response.ApiResponse;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
@@ -83,11 +83,8 @@ public class ThrottlingFilter extends OncePerRequestFilter {
             response.setContentType("application/json");
             response.setHeader("Retry-After", String.valueOf(waitSeconds));
 
-            ErrorResponse responsePayload = ErrorResponse.builder()
-                    .success(false)
-                    .message("Too many requests. Try again later.")
-                    .errors(List.of())
-                    .build();
+            ApiResponse responsePayload = ApiResponse.error("Too many requests. Try again later.");
+
             response.getWriter().write(objectMapper.writeValueAsString(responsePayload));
         }
     }

@@ -36,6 +36,14 @@ public class ExerciseController {
         return ResponseEntity.created(URI.create("/api/exercises/" + responseDto.getId())).body(responsePayload);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ExerciseResponse>> updateExercise(@PathVariable UUID id, @Valid @RequestBody ExerciseRequest requestPayload) {
+        ExerciseResponse responseDto = exerciseService.updateExercise(id, requestPayload);
+        ApiResponse<ExerciseResponse> responsePayload =
+                ApiResponse.success("Exercise updated successfully", responseDto);
+        return ResponseEntity.ok(responsePayload);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteExerciseById(@PathVariable UUID id) {

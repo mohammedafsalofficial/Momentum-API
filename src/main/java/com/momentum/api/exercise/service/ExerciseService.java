@@ -11,5 +11,7 @@ public interface ExerciseService {
 
     ExerciseResponse getExerciseById(UUID id);
 
+    ExerciseResponse updateExercise(UUID id, ExerciseRequest requestPayload);
+
     void deleteExerciseById(UUID id);
 }

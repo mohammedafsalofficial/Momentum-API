@@ -6,6 +6,7 @@ import com.momentum.api.exercise.dto.response.ExerciseResponse;
 import com.momentum.api.exercise.service.ExerciseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,5 +34,11 @@ public class ExerciseController {
         ApiResponse<ExerciseResponse> responsePayload =
                 ApiResponse.success("Exercise created successfully", responseDto);
         return ResponseEntity.created(URI.create("/api/exercises/" + responseDto.getId())).body(responsePayload);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void deleteExerciseById(@PathVariable UUID id) {
+        exerciseService.deleteExerciseById(id);
     }
 }

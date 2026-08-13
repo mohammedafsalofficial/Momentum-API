@@ -10,4 +10,6 @@ public interface ExerciseService {
     ExerciseResponse createExercise(ExerciseRequest requestPayload);
 
     ExerciseResponse getExerciseById(UUID id);
+
+    void deleteExerciseById(UUID id);
 }

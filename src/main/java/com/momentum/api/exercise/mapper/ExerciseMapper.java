@@ -34,4 +34,14 @@ public class ExerciseMapper {
                 .updatedAt(exercise.getUpdatedAt())
                 .build();
     }
+
+    public void updateEntity(Exercise exercise, ExerciseRequest request) {
+        exercise.setName(request.getName());
+        exercise.setDescription(request.getDescription());
+        exercise.setMuscleGroup(request.getMuscleGroup());
+        exercise.setEquipment(request.getEquipment());
+        exercise.setDifficulty(request.getDifficulty());
+        exercise.setInstructions(request.getInstructions());
+        exercise.setVideoUrl(request.getVideoUrl());
+    }
 }

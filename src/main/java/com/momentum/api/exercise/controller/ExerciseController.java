@@ -9,6 +9,7 @@ import com.momentum.api.exercise.enums.MuscleGroup;
 import com.momentum.api.exercise.service.ExerciseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -51,5 +52,19 @@ public class ExerciseController {
         ApiResponse<ExerciseResponse> responsePayload =
                 ApiResponse.success("Exercise created successfully", responseDto);
         return ResponseEntity.created(URI.create("/api/exercises/" + responseDto.getId())).body(responsePayload);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ExerciseResponse>> updateExercise(@PathVariable UUID id, @Valid @RequestBody ExerciseRequest requestPayload) {
+        ExerciseResponse responseDto = exerciseService.updateExercise(id, requestPayload);
+        ApiResponse<ExerciseResponse> responsePayload =
+                ApiResponse.success("Exercise updated successfully", responseDto);
+        return ResponseEntity.ok(responsePayload);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void deleteExerciseById(@PathVariable UUID id) {
+        exerciseService.deleteExerciseById(id);
     }
 }

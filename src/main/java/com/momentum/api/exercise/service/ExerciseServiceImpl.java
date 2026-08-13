@@ -50,6 +50,19 @@ public class ExerciseServiceImpl implements ExerciseService {
         return exerciseMapper.toResponse(exercise);
     }
 
+    @Override
+    public ExerciseResponse updateExercise(UUID id, ExerciseRequest requestPayload) {
+        Exercise exercise = findExerciseOrThrow(id);
+        exerciseMapper.updateEntity(exercise, requestPayload);
+        Exercise updatedExercise = exerciseRepository.save(exercise);
+        return exerciseMapper.toResponse(updatedExercise);
+    }
+
+    @Override
+    public void deleteExerciseById(UUID id) {
+        exerciseRepository.deleteById(id);
+    }
+
     private Exercise findExerciseOrThrow(UUID id) {
         return exerciseRepository.findById(id)
                 .orElseThrow((() -> new ExerciseNotFoundException(id)));

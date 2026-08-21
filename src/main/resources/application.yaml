@@ -8,6 +8,15 @@ spring:
         username: ${MOMENTUM_DB_USERNAME}
         password: ${MOMENTUM_DB_PASSWORD}
         driver-class-name: org.postgresql.Driver
+    jpa:
+        hibernate:
+          ddl-auto: validate   # let Flyway own schema changes, not Hibernate
+        show-sql: true
+    flyway:
+        enabled: true
+        locations: classpath:db/migration
+        baseline-on-migrate: true   # useful if applying Flyway to an existing DB
+        baseline-version: 0
     data:
         redis:
             host: ${MOMENTUM_REDIS_HOST:localhost}

@@ -1,0 +1,47 @@
+package com.momentum.api.app.mapper;
+
+import com.momentum.api.app.dto.request.ExerciseRequest;
+import com.momentum.api.app.dto.response.ExerciseResponse;
+import com.momentum.api.app.model.Exercise;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ExerciseMapper {
+
+    public Exercise toEntity(ExerciseRequest requestPayload) {
+        return Exercise.builder()
+                .name(requestPayload.getName())
+                .description(requestPayload.getDescription())
+                .muscleGroup(requestPayload.getMuscleGroup())
+                .equipment(requestPayload.getEquipment())
+                .difficulty(requestPayload.getDifficulty())
+                .instructions(requestPayload.getInstructions())
+                .videoUrl(requestPayload.getVideoUrl())
+                .build();
+    }
+
+    public ExerciseResponse toResponse(Exercise exercise) {
+        return ExerciseResponse.builder()
+                .id(exercise.getId())
+                .name(exercise.getName())
+                .description(exercise.getDescription())
+                .muscleGroup(exercise.getMuscleGroup())
+                .equipment(exercise.getEquipment())
+                .difficulty(exercise.getDifficulty())
+                .instructions(exercise.getInstructions())
+                .videoUrl(exercise.getVideoUrl())
+                .createdAt(exercise.getCreatedAt())
+                .updatedAt(exercise.getUpdatedAt())
+                .build();
+    }
+
+    public void updateEntity(Exercise exercise, ExerciseRequest request) {
+        exercise.setName(request.getName());
+        exercise.setDescription(request.getDescription());
+        exercise.setMuscleGroup(request.getMuscleGroup());
+        exercise.setEquipment(request.getEquipment());
+        exercise.setDifficulty(request.getDifficulty());
+        exercise.setInstructions(request.getInstructions());
+        exercise.setVideoUrl(request.getVideoUrl());
+    }
+}

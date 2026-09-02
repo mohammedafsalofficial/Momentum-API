@@ -4,6 +4,7 @@ import com.momentum.api.app.dto.request.WorkoutRequest;
 import com.momentum.api.app.dto.response.WorkoutResponse;
 import com.momentum.api.app.enums.WorkoutStatus;
 import com.momentum.api.app.exception.ResourceNotFoundException;
+import com.momentum.api.app.mapper.WorkoutMapper;
 import com.momentum.api.app.model.Workout;
 import com.momentum.api.app.repository.WorkoutRepository;
 import com.momentum.api.app.service.WorkoutService;
@@ -19,26 +20,18 @@ public class WorkoutServiceImpl implements WorkoutService {
 
     private final IAuthenticationFacade authenticationFacade;
     private final WorkoutRepository workoutRepository;
+    private final WorkoutMapper workoutMapper;
 
     @Override
     public WorkoutResponse getWorkoutById(UUID id) {
         Workout workout = workoutRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException(String.format("Workout not found for id: %s", id)));
 
-        return WorkoutResponse.builder()
-                .id(workout.getId())
-                .name(workout.getName())
-                .status(workout.getStatus())
-                .startedAt(workout.getStartedAt())
-                .completedAt(workout.getCompletedAt())
-                .notes(workout.getNotes())
-                .createdAt(workout.getCreatedAt())
-                .updatedAt(workout.getUpdatedAt())
-                .build();
+        return workoutMapper.toResponse(workout);
     }
 
     @Override
-    public Workout createWorkout(WorkoutRequest requestBody) {
+    public WorkoutResponse createWorkout(WorkoutRequest requestBody) {
         Workout workout = Workout.builder()
                 .user(authenticationFacade.getAuthenticatedUser())
                 .name(requestBody.name())
@@ -48,6 +41,8 @@ public class WorkoutServiceImpl implements WorkoutService {
                 .notes(requestBody.notes())
                 .build();
 
-        return workoutRepository.save(workout);
+        Workout savedWorkout = workoutRepository.save(workout);
+
+        return workoutMapper.toResponse(savedWorkout);
     }
 }

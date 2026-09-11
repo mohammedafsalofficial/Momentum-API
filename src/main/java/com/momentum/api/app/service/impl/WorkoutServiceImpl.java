@@ -3,6 +3,7 @@ package com.momentum.api.app.service.impl;
 import com.momentum.api.app.dto.request.WorkoutRequest;
 import com.momentum.api.app.dto.response.WorkoutResponse;
 import com.momentum.api.app.enums.WorkoutStatus;
+import com.momentum.api.app.exception.InvalidWorkoutStatusTransitionException;
 import com.momentum.api.app.exception.ResourceNotFoundException;
 import com.momentum.api.app.mapper.WorkoutMapper;
 import com.momentum.api.app.model.Workout;
@@ -72,5 +73,39 @@ public class WorkoutServiceImpl implements WorkoutService {
         Workout savedWorkout = workoutRepository.save(workout);
 
         return workoutMapper.toResponse(savedWorkout);
+    }
+
+    @Override
+    public WorkoutResponse updateWorkoutStatus(UUID id, WorkoutStatus newStatus) {
+        Workout workout = workoutRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Workout not found for id: " + id));
+
+        WorkoutStatus currentStatus = workout.getStatus();
+
+        if (currentStatus != WorkoutStatus.IN_PROGRESS) {
+            throw new InvalidWorkoutStatusTransitionException(
+                    currentStatus,
+                    newStatus
+            );
+        }
+
+        switch (newStatus) {
+            case WorkoutStatus.COMPLETED -> {
+                workout.setStatus(WorkoutStatus.COMPLETED);
+                workout.setCompletedAt(Instant.now());
+            }
+            case WorkoutStatus.CANCELLED -> {
+                workout.setStatus(WorkoutStatus.CANCELLED);
+                workout.setCompletedAt(null);
+            }
+            default -> throw new InvalidWorkoutStatusTransitionException(
+                    currentStatus,
+                    newStatus
+            );
+        }
+
+        Workout updatedWorkout = workoutRepository.save(workout);
+
+        return workoutMapper.toResponse(updatedWorkout);
     }
 }

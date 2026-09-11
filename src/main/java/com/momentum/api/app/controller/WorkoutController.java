@@ -1,5 +1,6 @@
 package com.momentum.api.app.controller;
 
+import com.momentum.api.app.dto.request.UpdateWorkoutStatusRequest;
 import com.momentum.api.app.dto.response.WorkoutResponse;
 import com.momentum.api.app.enums.WorkoutStatus;
 import com.momentum.api.common.response.ApiResponse;
@@ -54,5 +55,17 @@ public class WorkoutController {
         WorkoutResponse dto = workoutService.createWorkout(requestBody);
         ApiResponse<WorkoutResponse> responsePayload = ApiResponse.success("Workout saved successfully", dto);
         return ResponseEntity.ok(responsePayload);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<WorkoutResponse>> updateWorkoutStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateWorkoutStatusRequest request
+    ) {
+        WorkoutResponse dto = workoutService.updateWorkoutStatus(
+                id,
+                request.status()
+        );
+        return ResponseEntity.ok(ApiResponse.success("Workout status updated successfully.", dto));
     }
 }

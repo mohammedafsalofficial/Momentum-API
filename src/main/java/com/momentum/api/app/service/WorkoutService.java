@@ -22,4 +22,6 @@ public interface WorkoutService {
     WorkoutResponse getWorkoutById(UUID id);
 
     WorkoutResponse createWorkout(WorkoutRequest requestBody);
+
+    WorkoutResponse updateWorkoutStatus(UUID id, WorkoutStatus status);
 }
